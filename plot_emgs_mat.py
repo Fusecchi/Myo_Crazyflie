@@ -15,7 +15,7 @@ print("Press ctrl+pause/break to stop")
 q = multiprocessing.Queue()
 
 def worker(q):
-	m = Myo(mode=emg_mode.PREPROCESSED)
+	m = Myo(mode=emg_mode.RAW)
 	m.connect()
 	
 	def add_to_queue(emg, movement):

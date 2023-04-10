@@ -11,9 +11,11 @@ import multiprocessing
 import keyboard
 import numpy as np
 import scipy.signal as sig
-
+import tensorflow as tf
 
 from pyomyo import Myo, emg_mode
+
+
 
 # ------------ Myo Setup ---------------
 q = multiprocessing.Queue()
@@ -41,7 +43,7 @@ q = multiprocessing.Queue()
 
 
 def worker(q):
-	m = Myo(mode=emg_mode.PREPROCESSED)
+	m = Myo(mode=emg_mode.RAW)
 	m.connect()
 	
 	def add_to_queue(emg, movement):
@@ -119,22 +121,42 @@ if __name__ == "__main__":
 			pygame.event.pump()
 			# Get the emg data and plot it
 			while not(q.empty()):
-				emg = list(q.get())
-				emg_array = numpy.array(emg)
-				plot(scr, [e / 500. for e in emg])
-				print(emg)
-				with open('data/valsDump.txt',"a") as f:
-					# for x in range(len(emg)):
-						current_time = time.time()-running
-						conv = current_time * 1000
-						conv_to_int = int(conv)
-						int_to_float = float(conv_to_int)
-						real_float = int_to_float/1000
-						f.writelines("%s\n" % str(emg)+str(real_float))
+				end_time = time.time()
+				status = 0
+				if(status == 0):
+					condition = "False"
+				else:
+					condition = "True"
+				if(running-running>10.0 and running-end_time<20.0):
+					print("test")
+				# buffer = list(q.get())
+				emgnew = list()
+				# emg = list(q.get())
+
+				for row in range(8):
+					emg = list(q.get())
+					plot(scr, [e / 500. for e in emg])
+					# A for loop for column entries
+					emgnew.append(emg)
+				new = tf.convert_to_tensor([emgnew])
+				shape = tf.shape(new)
+				# print(shape)
+				model = tf.keras.models.load_model("/home/pc/Downloads/Opal.h5", compile = True)
+				prediction = model.predict(new)
+				#
+				print(prediction)
+				# with open('data/test.txt',"a") as f:
+				# 	# for x in range(len(emg)):
+				# 		current_time = time.time()-running
+				# 		conv = current_time * 1000
+				# 		conv_to_int = int(conv)
+				# 		int_to_float = float(conv_to_int)
+				# 		real_float = int_to_float/1000
+				# 		f.writelines("%s\n" % str(emgnew)+str(real_float))
 
 	except KeyboardInterrupt:
 		print("Quitting")
-		end_time = time.time()
+
 		print(end_time -running)
 		pygame.quit()
 		quit()
